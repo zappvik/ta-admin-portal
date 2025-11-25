@@ -4,11 +4,12 @@ A web application for managing Teaching Assistant applications. Professors and a
 
 ## Features
 
-- Secure authentication using NextAuth
+- Secure authentication using NextAuth with session-aware redirects
 - Application management and viewing
 - Subject-based selection and shortlisting system
 - User management for professors and administrators
 - Dashboard with application statistics and overview
+- Persistent login across tabs (authenticated users skip the login screen automatically)
 - **Dual CSV export functionality:**
   - Shortlisted CSV: Simplified format with one row per student (Name, Roll Number, Email, Subjects as comma-separated list)
   - Full CSV: Complete application details with all fields
@@ -18,6 +19,8 @@ A web application for managing Teaching Assistant applications. Professors and a
 - Dark mode support with theme persistence
 - Fully responsive design optimized for mobile and desktop
 - Smart caching for improved performance
+- Read-more toggles for long “Reason” and “Internship” responses in the applications table
+- Built-in feedback button that opens a Microsoft Teams chat with the developer
 - Security-first architecture with protected routes
 
 ## Tech Stack
@@ -82,6 +85,21 @@ Sensitive keys are stored in environment variables and never committed to versio
 **Session Management**
 JWT-based sessions with automatic token refresh. Sessions are encrypted and stored securely.
 
+## Authentication & Session Persistence
+
+- `app/page.tsx` and `app/(auth)/login/page.tsx` both call `getServerSession(authOptions)` and automatically redirect authenticated users straight to `/dashboard`. This keeps a logged-in professor from seeing the login screen when opening another tab.
+- `app/(dashboard)/layout.tsx` performs the same server-side session check and redirects to `/login` if the cookie has expired, so all dashboard routes remain protected.
+- `app/providers.tsx` wraps the entire app with `SessionProvider` and `next-themes`, enabling client components to access the NextAuth session and remember the user’s theme preference.
+- `DashboardWrapper` (used by the dashboard layout) provides the common shell, handles optimistic navigation loading states, and ensures the `ApplicationsContext` is available across dashboard pages.
+
+## Application Data Flow
+
+- `lib/context/ApplicationsContext.tsx` fetches data from `/api/applications`, caches it on the client, exposes helper methods (`refresh`, `selections`, `shortlistedApplications`, etc.), and auto-refreshes every 30 minutes.
+- `app/api/applications/route.ts` queries Supabase using the service role key and returns the data consumed by the context.
+- `app/actions/toggleSelection.ts` and `components/dashboard/ApplicationsTable.tsx` work together to optimistically star/unstar subjects. The table also includes the “Read more / Read less” UX for the Reason and Internship columns.
+- `app/actions/updatePassword.ts` (used by `ChangePasswordForm`) validates the session server-side before talking to Supabase.
+- CSV downloads (`DownloadCSVButton` & `DownloadShortlistedCSVButton`) generate client-side exports using the data already held in context, so no extra network call is required.
+
 ## Getting Started
 
 ### Prerequisites
@@ -95,7 +113,7 @@ JWT-based sessions with automatic token refresh. Sessions are encrypted and stor
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd view-applications
+cd ta-applications-dashboard
 ```
 
 2. Install dependencies:
@@ -125,23 +143,25 @@ npm run dev
 ## Project Structure
 
 ```
-view-applications/
+ta-applications-dashboard/
 ├── app/
-│   ├── (auth)/              # Authentication routes
-│   ├── (dashboard)/         # Protected dashboard routes
-│   ├── actions/             # Server actions
-│   ├── api/                 # API routes
-│   └── layout.tsx           # Root layout
+│   ├── (auth)/login          # Public auth pages
+│   ├── (dashboard)/...       # All protected dashboard routes
+│   ├── actions/              # Server actions (toggleSelection, updatePassword)
+│   ├── api/                  # Next.js route handlers (e.g., /api/applications, NextAuth)
+│   ├── providers.tsx         # Session + theme providers
+│   ├── layout.tsx            # Root layout
+│   └── page.tsx              # Auth-aware root redirect
 ├── components/
-│   ├── auth/                # Authentication components
-│   ├── dashboard/           # Dashboard components
-│   └── ThemeToggle.tsx      # Theme switcher
+│   ├── auth/                 # Login/logout UI
+│   ├── dashboard/            # Tables, settings cards, wrappers, etc.
+│   └── Logo/Theme components
 ├── lib/
-│   ├── cache/               # Server-side caching utilities
-│   ├── context/             # React Context providers
-│   ├── supabase.ts          # Supabase client
-│   └── types/               # TypeScript definitions
-└── public/                  # Static assets
+│   ├── cache/                # Server-side caching helpers
+│   ├── context/              # React Context providers (ApplicationsContext)
+│   ├── supabase.ts           # Supabase admin client
+│   └── types/                # NextAuth typings
+└── public/                   # Static assets (favicons, SVGs)
 ```
 
 ## Available Scripts
@@ -195,7 +215,7 @@ Main Supabase tables:
 
 - Theme preferences (Light/Dark mode)
 - Password change functionality
-- Feature request button (opens Microsoft Teams chat)
+- Feedback button that opens a Microsoft Teams chat with the developer
 - Reference guide with essential tips and CSV format information
 
 ## Performance Optimizations
