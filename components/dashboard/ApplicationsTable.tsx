@@ -1,6 +1,14 @@
 'use client'
 
-import { useState, useOptimistic, startTransition, useContext, useEffect, useRef } from 'react'
+import {
+  useState,
+  useOptimistic,
+  startTransition,
+  useContext,
+  useEffect,
+  useRef,
+  useLayoutEffect,
+} from 'react'
 import { usePathname } from 'next/navigation'
 import { toggleSelection } from '@/app/actions/toggleSelection'
 import DownloadCSVButton from '@/components/dashboard/DownloadCSVButton'
@@ -68,12 +76,54 @@ function ReadMoreText({
   text,
   maxLength = 260,
   maxLines = 5,
+  isExpanded: controlledExpanded,
+  onToggle,
+  syncedClampHeight,
+  onHeightChange,
 }: {
   text: string | null
   maxLength?: number
   maxLines?: number
+  isExpanded?: boolean
+  onToggle?: (next: boolean) => void
+  syncedClampHeight?: number
+  onHeightChange?: (height: number | undefined) => void
 }) {
-  const [isExpanded, setIsExpanded] = useState(false)
+  const [uncontrolledExpanded, setUncontrolledExpanded] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLParagraphElement>(null)
+  const isControlled = typeof controlledExpanded === 'boolean'
+  const isExpanded = isControlled ? controlledExpanded : uncontrolledExpanded
+
+  const handleToggle = () => {
+    const next = !isExpanded
+    if (typeof window !== 'undefined' && containerRef.current) {
+      const initialRect = containerRef.current.getBoundingClientRect()
+      const initialScrollY = window.scrollY
+
+      requestAnimationFrame(() => {
+        if (!containerRef.current) return
+        const newRect = containerRef.current.getBoundingClientRect()
+        const delta = newRect.top - initialRect.top
+        if (delta !== 0) {
+          window.scrollTo({ top: initialScrollY + delta })
+        }
+      })
+    }
+
+    onToggle?.(next)
+    if (!isControlled) {
+      setUncontrolledExpanded(next)
+    }
+  }
+
+  useLayoutEffect(() => {
+    if (isExpanded && contentRef.current) {
+      onHeightChange?.(contentRef.current.scrollHeight)
+    } else if (!isExpanded) {
+      onHeightChange?.(undefined)
+    }
+  }, [isExpanded, text, onHeightChange])
 
   if (!text || text.trim() === '') {
     return <span className="text-gray-400 italic">None provided</span>
@@ -82,17 +132,23 @@ function ReadMoreText({
   const shouldTruncate = text.length > maxLength
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" ref={containerRef}>
       <p
+        ref={contentRef}
         className="whitespace-pre-wrap break-words text-left"
         style={
           !isExpanded
-            ? {
-                display: '-webkit-box',
-                WebkitLineClamp: maxLines,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }
+            ? syncedClampHeight
+              ? {
+                  maxHeight: syncedClampHeight,
+                  overflow: 'hidden',
+                }
+              : {
+                  display: '-webkit-box',
+                  WebkitLineClamp: maxLines,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }
             : undefined
         }
       >
@@ -101,7 +157,7 @@ function ReadMoreText({
       {shouldTruncate && (
         <button
           type="button"
-          onClick={() => setIsExpanded((prev) => !prev)}
+          onClick={handleToggle}
           className="text-xs text-blue-600 dark:text-blue-400 hover:underline focus:outline-none"
         >
           {isExpanded ? 'Read less' : 'Read more'}
@@ -140,6 +196,51 @@ export default function ApplicationsTable({
   const [isBatchSelectOpen, setIsBatchSelectOpen] = useState(false)
   const [isCategorySelectOpen, setIsCategorySelectOpen] = useState(false)
   const [isSortSelectOpen, setIsSortSelectOpen] = useState(false)
+  const [expandedRows, setExpandedRows] = useState<
+    Record<string, { reason: boolean; internship: boolean }>
+  >({})
+  const [rowSyncState, setRowSyncState] = useState<
+    Record<string, { controller: 'reason' | 'internship' | null; height?: number }>
+  >({})
+
+  const getRowExpansion = (id: string) => expandedRows[id] || { reason: false, internship: false }
+  const getRowSync = (id: string) => rowSyncState[id] || { controller: null, height: undefined }
+
+  const handleRowToggle = (id: string, column: 'reason' | 'internship', next: boolean) => {
+    setExpandedRows((prev) => {
+      const current = prev[id] || { reason: false, internship: false }
+      const updated = next
+        ? {
+            reason: column === 'reason' ? true : false,
+            internship: column === 'internship' ? true : false,
+          }
+        : { reason: false, internship: false }
+      return { ...prev, [id]: updated }
+    })
+
+    setRowSyncState((prev) => {
+      if (!next) {
+        return { ...prev, [id]: { controller: null, height: undefined } }
+      }
+      return {
+        ...prev,
+      [id]: { controller: column, height: undefined },
+      }
+    })
+  }
+
+  const handleHeightChange = (id: string, column: 'reason' | 'internship') => (height?: number) => {
+    setRowSyncState((prev) => {
+      const current = prev[id]
+      if (!current || current.controller !== column) {
+        return prev
+      }
+    if (current.height === height) {
+      return prev
+    }
+    return { ...prev, [id]: { ...current, height } }
+    })
+  }
 
   const [optimisticSelections, addOptimisticSelection] = useOptimistic(
     initialSelections,
@@ -624,6 +725,8 @@ export default function ApplicationsTable({
                     const isFirst = index === 0
                     const compositeKey = `${app.id}::${name}`
                     const isSelected = optimisticSelections.has(compositeKey)
+                    const rowExpansion = getRowExpansion(app.id)
+                    const rowSync = getRowSync(app.id)
 
                     return (
                       <tr
@@ -681,13 +784,33 @@ export default function ApplicationsTable({
                               rowSpan={rowSpan}
                               className="px-4 py-5 border-r border-gray-200 dark:border-gray-700 align-middle text-sm leading-6 whitespace-pre-wrap break-words max-w-[300px] text-center text-gray-700 dark:text-gray-300"
                             >
-                              <ReadMoreText text={app.reason} />
+                              <ReadMoreText
+                                text={app.reason}
+                                isExpanded={rowExpansion.reason}
+                                onToggle={(next) => handleRowToggle(app.id, 'reason', next)}
+                                syncedClampHeight={
+                                  !rowExpansion.reason && rowSync.controller === 'internship'
+                                    ? rowSync.height
+                                    : undefined
+                                }
+                                onHeightChange={handleHeightChange(app.id, 'reason')}
+                              />
                             </td>
                             <td
                               rowSpan={rowSpan}
                               className="px-4 py-5 border-r border-gray-200 dark:border-gray-700 align-middle text-sm leading-6 whitespace-pre-wrap break-words max-w-[250px] text-center text-gray-700 dark:text-gray-300"
                             >
-                              <ReadMoreText text={app.internship} />
+                              <ReadMoreText
+                                text={app.internship}
+                                isExpanded={rowExpansion.internship}
+                                onToggle={(next) => handleRowToggle(app.id, 'internship', next)}
+                                syncedClampHeight={
+                                  !rowExpansion.internship && rowSync.controller === 'reason'
+                                    ? rowSync.height
+                                    : undefined
+                                }
+                                onHeightChange={handleHeightChange(app.id, 'internship')}
+                              />
                             </td>
                             <td
                               rowSpan={rowSpan}
