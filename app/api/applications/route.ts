@@ -3,8 +3,8 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-// Enable caching - revalidate every 30 seconds
-export const revalidate = 30
+// Mark as dynamic since we use authentication and headers
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
   try {
