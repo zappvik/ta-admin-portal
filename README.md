@@ -1,251 +1,94 @@
-# Winter TA Applications Dashboard
+# TA Applications Dashboard
 
-A web application for managing Teaching Assistant applications. Professors and administrators can view, review, and manage TA applications through an intuitive dashboard interface.
+The TA Applications Dashboard is the internal portal used by the School of Computing to collect, review, and shortlist Teaching Assistant applicants. It provides authenticated faculty members with a secure, consistent view of every submission, subject preference, and supporting detail.
 
-## Features
+## Overview
 
-- Secure authentication using NextAuth with session-aware redirects
-- Application management and viewing
-- Subject-based selection and shortlisting system
-- User management for professors and administrators
-- Dashboard with application statistics and overview
-- Persistent login across tabs (authenticated users skip the login screen automatically)
-- **Dual CSV export functionality:**
-  - Shortlisted CSV: Simplified format with one row per student (Name, Roll Number, Email, Subjects as comma-separated list)
-  - Full CSV: Complete application details with all fields
-- Breadcrumb navigation with clickable links
-- Settings page with preferences, password management, and feature requests
-- Reference guide integrated in settings
-- Dark mode support with theme persistence
-- Fully responsive design optimized for mobile and desktop
-- Smart caching for improved performance
-- Read-more toggles for long “Reason” and “Internship” responses in the applications table
-- Built-in feedback button that opens a Microsoft Teams chat with the developer
-- Security-first architecture with protected routes
+- **Purpose**: streamline faculty review, avoid parallel spreadsheets, and retain a single source of truth for selections.
+- **Audience**: Principal, faculty coordinators, and administrative staff who manage TA allocations.
+- **Stack**: Next.js 16 (App Router), TypeScript, Tailwind CSS, Supabase, NextAuth.js, and `next-themes`.
+- **Security**: All dashboard routes require an active NextAuth session; Supabase service-role operations execute only on the server.
 
-## Tech Stack
+## Core Capabilities
 
-- Next.js 16 (App Router)
-- TypeScript
-- Tailwind CSS
-- Supabase
-- NextAuth.js
-- next-themes
+- Credential-based authentication with automatic redirects for active sessions.
+- Comprehensive application table with subject preferences, grades, reasons, and internship history.
+- Per-faculty shortlisting via optimistic toggles, with visual indicators when a subject is already taken.
+- Full-data and shortlisted CSV exports that match internal reporting templates.
+- Settings area for password updates, feature requests, and personal preferences (theme, tips, reference material).
+- Responsive layout suitable for lecterns, desktops, and tablets.
 
-## Core Architecture
+## Architecture Notes
 
-### Caching System
-
-The application uses a multi-layer caching approach to optimize performance and reduce server load.
-
-**Client-Side Caching**
-Applications data is cached in React Context after the initial load. This allows instant navigation between pages without additional database queries. The cache persists for the duration of the user session.
-
-**Auto-Refresh**
-Data automatically refreshes every 30 minutes in the background to ensure users see the latest applications without manual intervention. This keeps the cache current while maintaining fast page loads. Users can also manually refresh using the refresh button in the header.
-
-**Manual Refresh**
-Users can trigger a manual refresh using the refresh button in the header. This immediately fetches the latest data from the server and updates the cache.
-
-**Server-Side Caching**
-React's `cache()` function prevents duplicate database queries within the same request cycle, reducing unnecessary database calls.
-
-**Optimistic Updates**
-When users toggle selections, the UI updates immediately while the server request processes in the background. If the request fails, the UI reverts to the previous state.
-
-**Benefits**
-- Instant page navigation with no loading delays
-- Reduced database query load
-- Real-time data synchronization
-- Better overall user experience
-
-### Security Features
-
-**Authentication**
-NextAuth.js handles all authentication with secure session management. Users must authenticate before accessing any dashboard routes.
-
-**Protected Routes**
-All dashboard routes require a valid session. Unauthenticated users are redirected to the login page.
-
-**Server-Side Validation**
-Every API route and server action validates the user session before processing requests. This ensures only authenticated users can access or modify data.
-
-**Service Role Access**
-Database operations use the Supabase service role key, which is never exposed to the client. All database queries execute server-side only.
-
-**User Isolation**
-Data is filtered by user ID to ensure users only see and modify their own selections. The selections table includes user_id to enforce data isolation.
-
-**Secure API Endpoints**
-All API routes check authentication status before processing. Unauthorized requests return 401 errors.
-
-**Environment Variables**
-Sensitive keys are stored in environment variables and never committed to version control. The `.env.local` file is excluded from git.
-
-**Session Management**
-JWT-based sessions with automatic token refresh. Sessions are encrypted and stored securely.
-
-## Authentication & Session Persistence
-
-- `app/page.tsx` and `app/(auth)/login/page.tsx` both call `getServerSession(authOptions)` and automatically redirect authenticated users straight to `/dashboard`. This keeps a logged-in professor from seeing the login screen when opening another tab.
-- `app/(dashboard)/layout.tsx` performs the same server-side session check and redirects to `/login` if the cookie has expired, so all dashboard routes remain protected.
-- `app/providers.tsx` wraps the entire app with `SessionProvider` and `next-themes`, enabling client components to access the NextAuth session and remember the user’s theme preference.
-- `DashboardWrapper` (used by the dashboard layout) provides the common shell, handles optimistic navigation loading states, and ensures the `ApplicationsContext` is available across dashboard pages.
-
-## Application Data Flow
-
-- `lib/context/ApplicationsContext.tsx` fetches data from `/api/applications`, caches it on the client, exposes helper methods (`refresh`, `selections`, `shortlistedApplications`, etc.), and auto-refreshes every 30 minutes.
-- `app/api/applications/route.ts` queries Supabase using the service role key and returns the data consumed by the context.
-- `app/actions/toggleSelection.ts` and `components/dashboard/ApplicationsTable.tsx` work together to optimistically star/unstar subjects. The table also includes the “Read more / Read less” UX for the Reason and Internship columns.
-- `app/actions/updatePassword.ts` (used by `ChangePasswordForm`) validates the session server-side before talking to Supabase.
-- CSV downloads (`DownloadCSVButton` & `DownloadShortlistedCSVButton`) generate client-side exports using the data already held in context, so no extra network call is required.
+- Applications are fetched via Supabase using service-role credentials inside API routes and server actions.
+- Client-side state (`ApplicationsContext`) caches application data for the active session and refreshes automatically every 30 minutes; users can request a manual refresh.
+- All server-facing code calls `getServerSession` to enforce access control before returning data.
+- CSV downloads reuse the cached data set, preventing duplicate database calls during export.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18 or higher
-- npm, yarn, pnpm, or bun
-- Supabase account and project
+- Node.js 18 or later with npm.
+- Supabase project containing `applications`, `selections`, and `professors` tables.
+- Valid Supabase anon key, service-role key, and a NextAuth secret.
 
-### Installation
+### Local Setup
 
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd ta-applications-dashboard
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Set up environment variables:
-Create a `.env.local` file in the root directory:
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=your_nextauth_secret
-```
-
-Important: Never commit `.env.local` to version control. The `SUPABASE_SERVICE_ROLE_KEY` and `NEXTAUTH_SECRET` are sensitive credentials.
-
-4. Run the development server:
-```bash
-npm run dev
-```
-
-5. Open http://localhost:3000 in your browser.
+1. Clone the repository and install dependencies:
+   ```bash
+   git clone <repository-url>
+   cd ta-applications-dashboard
+   npm install
+   ```
+2. Create `.env.local` (never commit this file):
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+   NEXTAUTH_URL=http://localhost:3000
+   NEXTAUTH_SECRET=your_nextauth_secret
+   ```
+3. Start the development server:
+   ```bash
+   npm run dev
+   ```
+4. Open `http://localhost:3000` and sign in with a provisioned faculty account.
 
 ## Project Structure
 
 ```
 ta-applications-dashboard/
-├── app/
-│   ├── (auth)/login          # Public auth pages
-│   ├── (dashboard)/...       # All protected dashboard routes
-│   ├── actions/              # Server actions (toggleSelection, updatePassword)
-│   ├── api/                  # Next.js route handlers (e.g., /api/applications, NextAuth)
-│   ├── providers.tsx         # Session + theme providers
-│   ├── layout.tsx            # Root layout
-│   └── page.tsx              # Auth-aware root redirect
-├── components/
-│   ├── auth/                 # Login/logout UI
-│   ├── dashboard/            # Tables, settings cards, wrappers, etc.
-│   └── Logo/Theme components
-├── lib/
-│   ├── cache/                # Server-side caching helpers
-│   ├── context/              # React Context providers (ApplicationsContext)
-│   ├── supabase.ts           # Supabase admin client
-│   └── types/                # NextAuth typings
-└── public/                   # Static assets (favicons, SVGs)
+├── app/            # App Router routes, layouts, API handlers, actions
+├── components/     # Auth forms, dashboard tables, UI primitives
+├── lib/            # Supabase helpers, caching utilities, context
+├── public/         # Static assets
+└── README.md
 ```
-
-## Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
 
 ## Environment Variables
 
-Required environment variables in `.env.local`:
+| Name | Purpose |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL used by client modules |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Public anon key for read-only client interactions |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only key for privileged actions (never expose) |
+| `NEXTAUTH_URL` | Base URL for NextAuth callbacks |
+| `NEXTAUTH_SECRET` | Secret for signing and encrypting sessions |
 
-- `NEXT_PUBLIC_SUPABASE_URL` - Supabase project URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Supabase anonymous key
-- `SUPABASE_SERVICE_ROLE_KEY` - Supabase service role key (keep secret)
-- `NEXTAUTH_URL` - Application URL (e.g., http://localhost:3000)
-- `NEXTAUTH_SECRET` - NextAuth session encryption secret (keep secret)
+## Operations and Deployment
 
-## Database Schema
+1. Push the repository to your institutional Git provider.
+2. Deploy to Vercel (or another Next.js-compatible host) and configure the environment variables above.
+3. Confirm the following in production:
+   - Login succeeds for faculty accounts.
+   - Applications load and refresh as expected.
+   - Shortlisting actions propagate to the database.
+   - CSV exports match academic reporting requirements.
 
-Main Supabase tables:
+## Support
 
-- `applications` - TA application records
-- `selections` - User selections of applications (includes user_id for isolation)
-- `professors` - Professor/user accounts
+- Feature requests and incident reports can be submitted through the dashboard’s built-in feedback link.
+- For infrastructure or authentication issues, contact the School of Computing development team.
 
-## Key Features
-
-### CSV Export
-
-**Shortlisted CSV Export:**
-- Available on the Shortlisted page
-- Format: Name, Roll Number, Email, Subjects (comma-separated)
-- One row per student with all shortlisted subjects in a single cell
-- Optimized for sharing with faculty members
-
-**Full CSV Export:**
-- Available on the Applications page
-- Includes all application details: Student Name, Roll Number, Email, Subjects, Reason, Internship, Submitted Date
-- Complete data export for comprehensive analysis
-
-### Navigation
-
-- Breadcrumb navigation showing current page path
-- Clickable breadcrumbs for quick navigation
-- Mobile-optimized breadcrumbs with responsive text sizing
-- Sidebar navigation with active page highlighting
-
-### Settings
-
-- Theme preferences (Light/Dark mode)
-- Password change functionality
-- Feedback button that opens a Microsoft Teams chat with the developer
-- Reference guide with essential tips and CSV format information
-
-## Performance Optimizations
-
-- Data caching in React Context after initial load
-- Background auto-refresh every 30 minutes
-- Optimistic UI updates for immediate feedback
-- Server-side rendering for critical data
-- Automatic code splitting by Next.js
-- Optimized image handling
-- Mobile-first responsive design
-
-## Deployment
-
-Deploy to Vercel:
-
-1. Push code to GitHub
-2. Import repository on Vercel
-3. Add environment variables in Vercel dashboard
-4. Deploy
-
-Production checklist:
-- All environment variables configured
-- `NEXTAUTH_URL` set to production domain
-- `NEXTAUTH_SECRET` is a strong random string
-- Database connection strings verified
-- CORS settings configured if needed
-
-See the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## License
-
-This project is private and proprietary.
+This codebase is an internal system of the School of Computing. Redistribution or external hosting requires approval from the Principal’s office.
