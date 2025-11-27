@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 import Logo from '@/components/Logo'
+import Watermark from '@/components/Watermark'
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard' },
@@ -48,6 +49,9 @@ export default function Sidebar({ onLinkClick }: { onLinkClick?: (href?: string)
           )
         })}
       </nav>
+      <div className="mt-auto px-4 pb-4 pt-2">
+        <Watermark variant="sidebar" />
+      </div>
     </aside>
   )
 }

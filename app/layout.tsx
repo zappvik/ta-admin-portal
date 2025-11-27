@@ -3,7 +3,6 @@ import './globals.css'
 import type { Metadata } from 'next'
 
 import Providers from './providers'
-import Watermark from '@/components/Watermark'
 
 export const metadata: Metadata = {
   title: 'TA Admin Portal',
@@ -29,7 +28,6 @@ export default function RootLayout({
         <Providers>
           <div className="relative z-10 min-h-screen">
             {children}
-            <Watermark />
           </div>
         </Providers>
       </body>

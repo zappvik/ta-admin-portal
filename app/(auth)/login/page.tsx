@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import LoginForm from '@/components/auth/LoginForm'
+import Watermark from '@/components/Watermark'
 
 export default async function LoginPage() {
   const session = await getServerSession(authOptions)
@@ -12,8 +13,9 @@ export default async function LoginPage() {
   }
 
   return (
-    <main>
+    <main className="relative">
       <LoginForm />
+      <Watermark />
     </main>
   )
 }

@@ -74,7 +74,7 @@ export default function LoginForm() {
           )}
         </button>
       )}
-      <div className="w-full max-w-[23.8rem] p-8 space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+      <div className="w-full max-w-[clamp(20rem,80vw,28.6rem)] p-8 space-y-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
         <div className="flex justify-center">
           <Logo size="lg" showText={true} />
         </div>

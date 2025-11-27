@@ -2,12 +2,18 @@
 
 import { usePathname } from 'next/navigation'
 
-export default function Watermark() {
+type WatermarkVariant = 'global' | 'sidebar'
+
+export default function Watermark({ variant = 'global' }: { variant?: WatermarkVariant }) {
   const pathname = usePathname()
   const isLoginPage = pathname === '/login'
 
   const baseClasses =
     'text-xs font-medium dark:text-gray-300 text-gray-500 tracking-wide opacity-90 pointer-events-none'
+
+  if (variant === 'sidebar') {
+    return <p className={`${baseClasses} text-left`}>Built by Lohit for Team SE @ Amrita</p>
+  }
 
   const positionClasses = isLoginPage ? 'left-0 w-full text-center' : 'left-6 text-left'
 
@@ -17,3 +23,4 @@ export default function Watermark() {
     </div>
   )
 }
+

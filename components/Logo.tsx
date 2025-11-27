@@ -9,11 +9,11 @@ interface LogoProps {
 }
 
 export default function Logo({ className = '', showText = true, size = 'md' }: LogoProps) {
-  const sizeClasses = {
-    sm: { icon: 'w-7 h-7', text: 'text-xs', gap: 'gap-1.5', iconSize: 20 },
-    md: { icon: 'w-9 h-9', text: 'text-sm', gap: 'gap-2', iconSize: 24 },
-    lg: { icon: 'w-12 h-12', text: 'text-lg', gap: 'gap-2.5', iconSize: 32 },
-  }
+const sizeClasses = {
+  sm: { icon: 'w-6 h-6 sm:w-7 sm:h-7', text: 'text-xs sm:text-sm', gap: 'gap-1.5', iconSize: 20 },
+  md: { icon: 'w-7 h-7 sm:w-9 sm:h-9', text: 'text-sm sm:text-base', gap: 'gap-2', iconSize: 24 },
+  lg: { icon: 'w-9 h-9 sm:w-12 sm:h-12', text: 'text-base sm:text-lg', gap: 'gap-2 sm:gap-2.5', iconSize: 32 },
+}
 
   const currentSize = sizeClasses[size]
 
