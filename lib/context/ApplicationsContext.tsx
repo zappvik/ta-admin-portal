@@ -39,7 +39,7 @@ type ApplicationsContextType = {
 }
 
 const CACHE_KEY = 'applications_cache'
-const CACHE_DURATION = 30 * 1000 // 30 seconds
+const CACHE_DURATION = 30 * 1000
 
 function getCachedData(): CachedData | null {
   if (typeof window === 'undefined') return null
@@ -51,12 +51,10 @@ function getCachedData(): CachedData | null {
     const data: CachedData = JSON.parse(cached)
     const now = Date.now()
     
-    // Check if cache is still valid (within 30 seconds)
     if (now - data.timestamp < CACHE_DURATION) {
       return data
     }
     
-    // Cache expired, remove it
     localStorage.removeItem(CACHE_KEY)
     return null
   } catch (error) {
@@ -78,7 +76,6 @@ function setCachedData(data: CachedData) {
 export const ApplicationsContext = createContext<ApplicationsContextType | undefined>(undefined)
 
 export function ApplicationsProvider({ children }: { children: ReactNode }) {
-  // Load cached data immediately if available
   const cachedData = getCachedData()
   const [applications, setApplications] = useState<Application[]>(cachedData?.applications || [])
   const [selections, setSelections] = useState<Set<string>>(
@@ -87,7 +84,6 @@ export function ApplicationsProvider({ children }: { children: ReactNode }) {
   const [selectionData, setSelectionData] = useState<Record<string, SelectionData>>(
     cachedData?.selectionData || {}
   )
-  // Only show loading if we don't have cached data
   const [isLoading, setIsLoading] = useState(!cachedData)
   const [error, setError] = useState<string | null>(null)
 
@@ -113,7 +109,7 @@ export function ApplicationsProvider({ children }: { children: ReactNode }) {
       setError(null)
       
       const response = await fetch('/api/applications', {
-        cache: 'default', // Use browser cache
+        cache: 'default',
       })
       
       if (!response.ok) {
@@ -126,12 +122,10 @@ export function ApplicationsProvider({ children }: { children: ReactNode }) {
       const newSelections = new Set<string>(data.selections || [])
       const newSelectionData = data.selectionData || {}
       
-      // Update state
       setApplications(newApplications)
       setSelections(newSelections)
       setSelectionData(newSelectionData)
       
-      // Update cache
       setCachedData({
         applications: newApplications,
         selections: Array.from(newSelections),
@@ -142,7 +136,6 @@ export function ApplicationsProvider({ children }: { children: ReactNode }) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred'
       console.error('Error fetching applications:', err)
       
-      // Only show error if we don't have cached data to fall back to
       const currentCached = getCachedData()
       if (!currentCached) {
         setError(errorMessage)
@@ -153,23 +146,19 @@ export function ApplicationsProvider({ children }: { children: ReactNode }) {
   }
 
   const refresh = async () => {
-    await fetchApplications(true) // Always show loading on manual refresh
+    await fetchApplications(true)
   }
 
   useEffect(() => {
-    // If we have cached data, fetch in background without showing loading
-    // Otherwise, show loading while fetching
     const hasCachedData = !!cachedData
     fetchApplications(!hasCachedData)
     
-    // Set up interval to refresh data every 30 minutes
     const interval = setInterval(() => {
-      fetchApplications(false) // Don't show loading on background refresh
-    }, 1800000) // 30 minutes
+      fetchApplications(false)
+    }, 1800000)
 
     return () => clearInterval(interval)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // Only run on mount
+  }, [])
 
   return (
     <ApplicationsContext.Provider

@@ -3,7 +3,6 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 
-// Mark as dynamic since we use authentication and headers
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
@@ -55,7 +54,6 @@ export async function GET() {
       selectionData,
     })
 
-    // Add cache headers for authenticated users (private cache)
     response.headers.set('Cache-Control', 'private, s-maxage=30, stale-while-revalidate=60')
 
     return response

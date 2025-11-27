@@ -26,9 +26,6 @@ export default function ChangePasswordForm() {
 
     setMsg(null)
 
-
-
-    // Client-side validation (server also validates)
     if (newPass.length < 8) {
       setMsg({ text: 'Password must be at least 8 characters long', type: 'error' })
       setLoading(false)

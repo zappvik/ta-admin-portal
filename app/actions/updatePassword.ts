@@ -8,9 +8,6 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 import { createClient } from '@supabase/supabase-js'
 
-
-
-// Password validation
 function validatePassword(password: string): { valid: boolean; error?: string } {
   if (!password || typeof password !== 'string') {
     return { valid: false, error: 'Password is required' }
@@ -24,7 +21,6 @@ function validatePassword(password: string): { valid: boolean; error?: string } 
     return { valid: false, error: 'Password is too long' }
   }
   
-  // Check for at least one letter and one number
   const hasLetter = /[a-zA-Z]/.test(password)
   const hasNumber = /[0-9]/.test(password)
   
@@ -32,7 +28,6 @@ function validatePassword(password: string): { valid: boolean; error?: string } 
     return { valid: false, error: 'Password must contain at least one letter and one number' }
   }
   
-  // Prevent common weak passwords
   const commonPasswords = ['password', '12345678', 'qwerty', 'abc123']
   if (commonPasswords.some(common => password.toLowerCase().includes(common))) {
     return { valid: false, error: 'Password is too common. Please choose a stronger password.' }
@@ -53,7 +48,6 @@ export async function updatePassword(password: string) {
 
   }
 
-  // Validate password
   const validation = validatePassword(password)
   if (!validation.valid) {
     return { error: validation.error || 'Invalid password' }
