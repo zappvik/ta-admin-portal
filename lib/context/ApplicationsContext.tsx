@@ -123,7 +123,7 @@ export function ApplicationsProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json()
       const newApplications = data.applications || []
-      const newSelections = new Set(data.selections || [])
+      const newSelections = new Set<string>(data.selections || [])
       const newSelectionData = data.selectionData || {}
       
       // Update state
