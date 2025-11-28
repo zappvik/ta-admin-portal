@@ -849,12 +849,12 @@ export default function ApplicationsTable({
             <tr>
               <th className="px-4 py-3 min-w-[150px] text-center align-middle">Student Name</th>
               <th className="px-4 py-3 min-w/[100px] text-center align-middle">Roll No</th>
-              <th className="px-4 py-3 min-w/[200px] text-center align-middle">Email</th>
-              <th className="px-4 py-3 min-w/[200px] text-center align-middle">Subject</th>
+              <th className="px-4 py-3 min-w/[190px] text-center align-middle">Email</th>
+              <th className="px-4 py-3 min-w/[210px] text-center align-middle">Subject</th>
               <th className="px-4 py-3 w-16 text-center align-middle">Pref</th>
               <th className="px-4 py-3 w-20 text-center align-middle">Grade</th>
               <th className="px-4 py-3 min-w/[300px] text-center align-middle">Reason</th>
-              <th className="px-4 py-3 min-w/[250px] text-center align-middle">Internship</th>
+              <th className="px-4 py-3 min-w/[300px] text-center align-middle">Internship</th>
               <th className="px-4 py-3 min-w/[100px] text-center align-middle">Submitted</th>
             </tr>
           </thead>
@@ -898,14 +898,14 @@ export default function ApplicationsTable({
                             </td>
                             <td
                               rowSpan={rowSpan}
-                              className="px-4 py-5 border-r border-gray-200 dark:border-gray-700 align-middle break-words max-w-[200px] text-center"
+                              className="px-4 py-5 border-r border-gray-200 dark:border-gray-700 align-middle break-words max-w-[190px] text-center"
                             >
                               {app.email}
                             </td>
                           </>
                         )}
 
-                        <td className="px-4 py-5 border-r border-gray-200 dark:border-gray-700 align-middle font-medium text-gray-800 dark:text-gray-200 break-words max-w-[200px] text-center">
+                        <td className="px-4 py-5 border-r border-gray-200 dark:border-gray-700 align-middle font-medium text-gray-800 dark:text-gray-200 break-words max-w-[210px] text-center">
                           <div className="flex items-center justify-start gap-2">
                             <button
                               onClick={() => handleToggle(app.id, name)}
@@ -954,7 +954,7 @@ export default function ApplicationsTable({
                             </td>
                             <td
                               rowSpan={rowSpan}
-                              className="px-4 py-5 border-r border-gray-200 dark:border-gray-700 align-middle text-sm leading-6 whitespace-pre-wrap break-words max-w-[250px] text-center text-gray-700 dark:text-gray-300"
+                              className="px-4 py-5 border-r border-gray-200 dark:border-gray-700 align-middle text-sm leading-6 whitespace-pre-wrap break-words max-w-[300px] text-center text-gray-700 dark:text-gray-300"
                             >
                               <ReadMoreText
                                 text={app.internship}

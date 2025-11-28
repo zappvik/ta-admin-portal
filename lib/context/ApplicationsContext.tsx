@@ -24,7 +24,7 @@ type ApplicationsContextType = {
   selectionData: Record<string, SelectionData>
   isLoading: boolean
   error: string | null
-  refresh: (useCache?: boolean) => Promise<void>
+  refresh: (useCache?: boolean, showLoading?: boolean) => Promise<void>
   totalCount: number
   recentApplications: Application[]
   chosenCount: number
@@ -95,10 +95,11 @@ export function ApplicationsProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const refresh = async (useCache = false) => {
+  const refresh = async (useCache = false, showLoading = false) => {
     // Default to false (fetch fresh) unless explicitly told to use cache
     // This ensures shortlisting always gets fresh data
-    await fetchApplications(true, useCache)
+    // showLoading defaults to false to prevent full page reloads during shortlisting
+    await fetchApplications(showLoading, useCache)
   }
 
   useEffect(() => {
