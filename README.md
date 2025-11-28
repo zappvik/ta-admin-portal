@@ -37,7 +37,7 @@ The TA Applications Dashboard is the internal portal used by the School of Compu
 
 1. Clone the repository and install dependencies:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/zappvik/ta-applications-dashboard.git
    cd ta-applications-dashboard
    npm install
    ```
